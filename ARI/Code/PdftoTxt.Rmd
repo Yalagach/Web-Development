@@ -1,0 +1,103 @@
+---
+title: "Pdf_to_txt"
+output: html_document
+date: "2023-06-06"
+---
+
+```{r}
+library(pdftools)
+library(stringr)
+```
+
+```{r}
+
+txt <- pdf_text("/Users/nak?sh/Documents/DSPG/ARI/Data/2021_PAM_600-3_ADA.pdf")
+
+#combined_text <- paste(txt)
+combined_text <- paste0(txt, collapse = "")
+clean_text <- gsub("\n", "", combined_text)
+#print(clean_text)
+```
+
+```{r}
+print("Lieutenant")
+
+lieutenant_data <- str_extract(clean_text, pattern = "(?s)e\\. Lieutenant Development\\.(.*?)f\\. Captain Development\\.")
+#lieutenant_data
+
+kd_data <- str_extract(lieutenant_data, pattern = "KD.*TCO\\)")
+kd_data
+
+print("")
+
+developmental_data <- str_extract(lieutenant_data, pattern = "(?s)Developmental and Broadening Assignments(.*?)Self-development.")
+developmental_data
+```
+
+```{r}
+
+print("Captain")
+
+captain_data <- str_extract(clean_text, pattern = "(?s)f\\. Captain Development\\.(.*?)g\\. MAJ Development\\.")
+#lieutenant_data
+
+kd_data <- str_extract(captain_data, pattern = "(?s)KD(.*?)Developmental and Broadening Assignments.")
+kd_data
+
+print("")
+
+developmental_data <- str_extract(captain_data, pattern = "(?s)Developmental and Broadening Assignments(.*?)Self-development.")
+developmental_data
+```
+
+```{r}
+print("MAJ")
+
+maj_data <- str_extract(clean_text, pattern = "(?s)g\\. MAJ Development\\.(.*?)h\\. LTC Development\\.")
+#lieutenant_data
+
+kd_data <- str_extract(maj_data, pattern = "(?s)KD(.*?)Developmental and Broadening Assignments.")
+kd_data
+
+print("")
+
+developmental_data <- str_extract(maj_data, pattern = "(?s)Developmental and Broadening Assignments(.*?)Self-development.")
+developmental_data
+```
+
+```{r}
+
+print("LTC")
+
+ltc_data <- str_extract(clean_text, pattern = "(?s)h\\. LTC Development\\.(.*?)i\\. Colonel \\(COL\\) Development\\.")
+#lieutenant_data
+
+kd_data <- str_extract(ltc_data, pattern = "(?s)KD(.*?)Developmental and Broadening Assignments.")
+kd_data
+
+print("")
+
+developmental_data <- str_extract(ltc_data, pattern = "(?s)Developmental and Broadening Assignments(.*?)Self-development.")
+developmental_data
+```
+
+```{r}
+print("Colonel")
+
+colonel_data <- str_extract(clean_text, pattern = "(?s)h\\. LTC Development\\.(.*?)i\\. Colonel \\(COL\\) Development\\.")
+#lieutenant_data
+
+kd_data <- str_extract(colonel_data, pattern = "(?s)KD(.*?)Developmental and Broadening Assignments.")
+kd_data <- gsub("KD Assignments\\.", "", kd_data)
+kd_data
+
+print("")
+
+developmental_data <- str_extract(colonel_data, pattern = "(?s)Developmental and Broadening Assignments(.*?)Self-development.")
+developmental_data
+
+```
+
+```{r}
+
+```

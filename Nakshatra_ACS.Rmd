@@ -1,0 +1,120 @@
+---
+title: "acs"
+output:
+  html_document: default
+  pdf_document: default
+date: "2023-06-05"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r, echo = FALSE, results = "hide"}
+library(acs)
+library(plotly)
+library(RColorBrewer)
+library(tidycensus)
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r, results = "hide", message=FALSE, error=FALSE, echo = FALSE}
+census_api_key('250b627b4881bc26920e76c0ef71f0ae699bd2ba')
+pop_usa <- get_acs(
+  geography = 'state',
+  year = 2021,
+  survey = 'acs5',
+  variables = c(pop = 'B01001_001')
+)
+```
+
+```{r, warning = FALSE, message = FALSE}
+#census_api_key('250b627b4881bc26920e76c0ef71f0ae699bd2ba')
+bpl_or <- get_acs(
+  geography = 'tract',
+  year = 2021,
+  survey = 'acs5',
+  variables = c(pov = 'B17001_002'),
+  state = "OR",
+  county = 'Multnomah County'
+) 
+```
+
+```{r, warning = FALSE, message = FALSE}
+homeownership_or <- get_acs(
+  geography = 'tract',
+  year = 2021,
+  survey = 'acs5',
+  variables = c(home_ownership = 'B25003_002'),
+  state = "OR",
+  county = 'Multnomah County'
+) 
+```
+
+```{r, warning = FALSE, message = FALSE}
+library(ggplot2)
+bpl_vs_houseownership <- homeownership_or %>%
+  select(NAME, estimate) %>%
+  rename(home_ownership = estimate)
+pop_md_education <- bpl_or %>%
+  select(NAME, estimate) %>%
+  rename(pov = estimate)
+bpl_vs_houseownership <- full_join(homeownership_or, bpl_or, by = "NAME")
+
+```
+
+```{r, warning = FALSE, message = FALSE}
+alldata <- get_acs(
+  geography = 'tract',
+  year = 2021,
+  survey = 'acs5',
+  variables = c(home_ownership = 'B25003_002',
+                pov = 'B17001_002',
+                pop = 'B01001_001'
+                ),
+  state = "OR",
+  county = 'Multnomah County',
+  output = "wide"
+) %>% 
+  rename(
+    home_ownership = home_ownershipE,
+    poverty = povE,
+    population = popE
+  )
+
+selectedvariables <- alldata %>% 
+  select(NAME, home_ownership, poverty, population) %>% 
+  mutate(
+    percentpov = poverty / population,
+    percenthomeownership = home_ownership / population,
+    PopulationSize = case_when(
+      population < 2000 ~ "Small",
+      population > 2000 & population < 5000 ~ "Medium",
+      population > 5000 ~ "Large"
+    )
+  )
+selectedvariables <- selectedvariables[-197,]
+```
+
+```{r}
+#palette <- rev(brewer.pal(n = 3, name = "Set1"))
+
+fig <- ggplot(selectedvariables, aes(x = percenthomeownership, y = percentpov, label = NAME)) +
+geom_point() +
+geom_point(aes(color = PopulationSize))+
+geom_smooth(method = "lm") +
+labs(x = "Percentage Homeownership", y = "Percentage Poverty") +
+  ggtitle("Poverty Vs Home Ownership") + #scale_color_manual(values=c('Navy','Skyblue', 'Lightblue'))
+  scale_color_brewer(palette = "YlOrRd", direction=-1)
+
+ggplotly(fig)
+```
+
+The above plot concludes that there is a causality between Poverty and Home ownership. A steep downward trend is observed. It demonstrates that as the percentage poverty reduces the percentage home ownership increases. The red points represent the neighborhoods with high population occupancy while the yellow points depict the neighborhoods with low population occupancy. The red points are mostly clustered in the middle area which represents that people with moderate income tend to own homes. Detailed information about each point can be obtained by hovering on them. Therefore it can be concluded that there is a correlation between poverty and home ownership. As the poverty reduces the probability of owning a house increases.

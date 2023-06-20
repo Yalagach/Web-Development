@@ -1,0 +1,126 @@
+---
+title: "airbnb"
+output: html_document
+date: "2023-06-14"
+---
+
+```{r}
+#library(tidyverse)
+library(sf)
+library(ggplot2)
+#library(dplyr)
+library(OpenStreetMap)
+library(ggmap)
+```
+
+```{r}
+loc <- read.csv("Downloads/Location_data_sample_v4_June2020.csv", as.is=T)
+
+points = st_as_sf(loc, coords = c("longitude", "latitude"), crs = 4326)
+
+plot(st_geometry(points), pch=16, col="navy")
+```
+
+```{r}
+max_lon = max(loc$longitude)
+min_lon = min(loc$longitude)
+
+max_lat = max(loc$latitude)
+min_lat = min(loc$latitude)
+```
+
+```{r}
+Sys.setenv(NOAWT=1)
+
+
+
+upperLeft = c(max_lat, min_lon)
+
+lowerRight = c(min_lat, max_lon)
+
+base_map  = openmap(upperLeft, lowerRight, type="osm")
+
+plot(base_map)
+
+points = st_transform(points, osm())
+
+plot(st_geometry(points), pch=16, col="navy", cex=2, add=T)
+title("Spread of Airbnbs throughout the world")
+```
+
+```{r}
+Sys.setenv(NOAWT=1)
+
+usa_loc <- loc %>% filter(country == "US")
+points = st_as_sf(usa_loc, coords = c("longitude", "latitude"), crs = 4326)
+points <- st_transform(points, osm())
+
+# load data
+test <- us_states
+
+# join loc with us state data
+temp1 <- test %>% select(GEOID,NAME, geometry)
+loc_state <- st_join(st_transform(points, 4269), st_transform(temp1, 4269), join = st_within)
+loc_state
+
+temp1 <- loc_state %>% group_by(GEOID) %>% summarise(loc_count=length(`platform..old..advertiser_id_type...IDFA..iOS....AAID..Android..`)) %>% st_drop_geometry()
+
+# add states geometry
+temp2 <- merge(test,temp1, by='GEOID')
+
+
+upperLeft = c(max_lat, min_lon)
+
+lowerRight = c(min_lat, max_lon)
+
+base_map  = openmap(upperLeft, lowerRight, type="osm")
+
+plot(base_map)
+
+points = st_transform(points, osm())
+
+plot(st_geometry(points), pch=16, col="navy", cex=2, add=T)
+title("Spread of Airbnbs in USA")
+```
+
+```{r}
+library(usmap)
+library(spData)
+
+us_map <- plot_usmap(regions = "states") + 
+  labs(title = "US Counties",
+       subtitle = "This is a blank map of the counties of the United States.")+  
+  theme(panel.background = element_rect(color = "black", fill = "lightblue"))
+plot(us_map)
+
+usa_loc <- loc %>% filter(country == "US")
+points = st_as_sf(usa_loc, coords = c("longitude", "latitude"), crs = 4326)
+points <- st_transform(points, osm())
+
+# load data
+test <- us_states
+
+# join loc with us state data
+temp1 <- test %>% select(GEOID,NAME, geometry)
+loc_state <- st_join(st_transform(points, 4269), st_transform(temp1, 4269), join = st_within)
+loc_state
+
+# count the number of loc by states
+temp1 <- loc_state %>% group_by(GEOID) %>% summarise(loc_count=length(`platform..old..advertiser_id_type...IDFA..iOS....AAID..Android..`)) %>% st_drop_geometry()
+
+# add states geometry
+temp2 <- merge(test,temp1, by='GEOID')
+
+ggplot(data = temp2, aes(geometry = geometry, fill = loc_count, label=loc_count)) +
+  geom_sf() +
+  geom_sf_label(fill = "white",  # override the fill from aes()
+                fun.geometry = sf::st_centroid) + # make Manhattan behave itself
+  scale_fill_continuous(low = "lightblue", 
+                        high = "darkblue") +
+  theme(axis.title=element_blank(), 
+        axis.text=element_blank(), 
+        axis.ticks=element_blank()) + 
+  ggtitle('Statewise Airbnb Location Data ') 
+
+
+```
